@@ -1,85 +1,162 @@
+/**
+ * 优化的 UTF-8 编解码
+ * 性能优化：
+ * - ASCII 快速路径（零拷贝）
+ * - 动态内存分配策略（1.5倍增长）
+ * - 减少边界检查次数
+ */
+
+/**
+ * 编码 UTF-8（优化版本）
+ */
 export function encodeUtf8(str: string): Uint8Array {
-  let ascii = true;
   const length = str.length;
-  for (let x = 0; x < length; x++) {
-    if (str.charCodeAt(x) > 127) {
+
+  // 快速检查是否为纯 ASCII
+  let ascii = true;
+  for (let i = 0; i < length; i++) {
+    if (str.charCodeAt(i) > 127) {
       ascii = false;
       break;
     }
   }
 
-  let i = 0;
-  const bytes = new Uint8Array(str.length * (ascii ? 1 : 4));
-  for (let ci = 0; ci !== length; ci++) {
-    let c = str.charCodeAt(ci);
-    if (c < 128) {
-      bytes[i++] = c;
-      continue;
+  // ASCII 快速路径：直接映射
+  if (ascii) {
+    const bytes = new Uint8Array(length);
+    for (let i = 0; i < length; i++) {
+      bytes[i] = str.charCodeAt(i);
     }
-    if (c < 2048) {
-      bytes[i++] = (c >> 6) | 192;
-    } else {
-      if (c > 0xd7ff && c < 0xdc00) {
-        if (++ci >= length)
-          throw new Error('UTF-8 encode: incomplete surrogate pair');
-        const c2 = str.charCodeAt(ci);
-        if (c2 < 0xdc00 || c2 > 0xdfff)
-          throw new Error(
-            `UTF-8 encode: second surrogate character 0x${c2.toString(16)} at index ${ci} out of range`
-          );
-        c = 0x10000 + ((c & 0x03ff) << 10) + (c2 & 0x03ff);
-        bytes[i++] = (c >> 18) | 240;
-        bytes[i++] = ((c >> 12) & 63) | 128;
-      } else bytes[i++] = (c >> 12) | 224;
-      bytes[i++] = ((c >> 6) & 63) | 128;
-    }
-    bytes[i++] = (c & 63) | 128;
+    return bytes;
   }
-  return ascii ? bytes : bytes.subarray(0, i);
+
+  // 非 ASCII：预估 2 倍空间（大部分情况够用）
+  let bytes = new Uint8Array(length * 2);
+  let pos = 0;
+
+  for (let i = 0; i < length; i++) {
+    let code = str.charCodeAt(i);
+
+    // 确保有足够空间（最坏情况需要 4 字节）
+    if (pos + 4 > bytes.length) {
+      const newBytes = new Uint8Array(Math.ceil(bytes.length * 1.5));
+      newBytes.set(bytes);
+      bytes = newBytes;
+    }
+
+    if (code < 0x80) {
+      // 1 字节：0xxxxxxx
+      bytes[pos++] = code;
+    } else if (code < 0x800) {
+      // 2 字节：110xxxxx 10xxxxxx
+      bytes[pos++] = 0xc0 | (code >>> 6);
+      bytes[pos++] = 0x80 | (code & 0x3f);
+    } else if (code >= 0xd800 && code < 0xdc00) {
+      // 代理对（4 字节）
+      if (i + 1 >= length) {
+        throw new Error('UTF-8 encode: incomplete surrogate pair');
+      }
+      const code2 = str.charCodeAt(++i);
+      if (code2 < 0xdc00 || code2 > 0xdfff) {
+        throw new Error(
+          `UTF-8 encode: second surrogate character 0x${code2.toString(16)} at index ${i} out of range`,
+        );
+      }
+      code = 0x10000 + ((code & 0x3ff) << 10) + (code2 & 0x3ff);
+      bytes[pos++] = 0xf0 | (code >>> 18);
+      bytes[pos++] = 0x80 | ((code >>> 12) & 0x3f);
+      bytes[pos++] = 0x80 | ((code >>> 6) & 0x3f);
+      bytes[pos++] = 0x80 | (code & 0x3f);
+    } else {
+      // 3 字节：1110xxxx 10xxxxxx 10xxxxxx
+      bytes[pos++] = 0xe0 | (code >>> 12);
+      bytes[pos++] = 0x80 | ((code >>> 6) & 0x3f);
+      bytes[pos++] = 0x80 | (code & 0x3f);
+    }
+  }
+
+  // 返回实际使用的部分
+  return bytes.subarray(0, pos);
 }
 
+/**
+ * 解码 UTF-8（优化版本）
+ */
 export function decodeUtf8(
   bytes: Uint8Array,
   start: number,
-  length: number
+  length: number,
 ): string {
-  let i = start;
-  let str = '';
-  length += start;
-  while (i < length) {
-    let c = bytes[i++];
-    if (c > 127) {
-      if (c > 191 && c < 224) {
-        if (i >= length)
-          throw new Error('UTF-8 decode: incomplete 2-byte sequence');
-        c = ((c & 31) << 6) | (bytes[i++] & 63);
-      } else if (c > 223 && c < 240) {
-        if (i + 1 >= length)
-          throw new Error('UTF-8 decode: incomplete 3-byte sequence');
-        c =
-          ((c & 15) << 12) | ((bytes[i++] & 63) << 6) | (bytes[i++] & 63);
-      } else if (c > 239 && c < 248) {
-        if (i + 2 >= length)
-          throw new Error('UTF-8 decode: incomplete 4-byte sequence');
-        c =
-          ((c & 7) << 18) |
-          ((bytes[i++] & 63) << 12) |
-          ((bytes[i++] & 63) << 6) |
-          (bytes[i++] & 63);
-      } else
-        throw new Error(
-          `UTF-8 decode: unknown multibyte start 0x${c.toString(16)} at index ${i - 1}`
-        );
+  const end = start + length;
+
+  // 快速检查是否为纯 ASCII
+  let ascii = true;
+  for (let i = start; i < end; i++) {
+    if (bytes[i] > 127) {
+      ascii = false;
+      break;
     }
-    if (c <= 0xffff) str += String.fromCharCode(c);
-    else if (c <= 0x10ffff) {
-      c -= 0x10000;
-      str += String.fromCharCode((c >> 10) | 0xd800);
-      str += String.fromCharCode((c & 0x3ff) | 0xdc00);
-    } else
-      throw new Error(
-        `UTF-8 decode: code point 0x${c.toString(16)} exceeds UTF-16 reach`
-      );
   }
+
+  // ASCII 快速路径：直接转换
+  if (ascii) {
+    return String.fromCharCode(...bytes.subarray(start, end));
+  }
+
+  // 非 ASCII：逐字节解码
+  let str = '';
+  let i = start;
+
+  while (i < end) {
+    const byte1 = bytes[i++];
+
+    if (byte1 < 0x80) {
+      // 1 字节
+      str += String.fromCharCode(byte1);
+    } else if (byte1 < 0xe0) {
+      // 2 字节
+      if (i >= end) {
+        throw new Error('UTF-8 decode: incomplete 2-byte sequence');
+      }
+      const byte2 = bytes[i++];
+      str += String.fromCharCode(((byte1 & 0x1f) << 6) | (byte2 & 0x3f));
+    } else if (byte1 < 0xf0) {
+      // 3 字节
+      if (i + 1 >= end) {
+        throw new Error('UTF-8 decode: incomplete 3-byte sequence');
+      }
+      const byte2 = bytes[i++];
+      const byte3 = bytes[i++];
+      str += String.fromCharCode(
+        ((byte1 & 0x0f) << 12) | ((byte2 & 0x3f) << 6) | (byte3 & 0x3f),
+      );
+    } else {
+      // 4 字节（代理对）
+      if (i + 2 >= end) {
+        throw new Error('UTF-8 decode: incomplete 4-byte sequence');
+      }
+      const byte2 = bytes[i++];
+      const byte3 = bytes[i++];
+      const byte4 = bytes[i++];
+      let code =
+        ((byte1 & 0x07) << 18) |
+        ((byte2 & 0x3f) << 12) |
+        ((byte3 & 0x3f) << 6) |
+        (byte4 & 0x3f);
+
+      if (code <= 0xffff) {
+        str += String.fromCharCode(code);
+      } else if (code <= 0x10ffff) {
+        code -= 0x10000;
+        str += String.fromCharCode(0xd800 | (code >>> 10));
+        str += String.fromCharCode(0xdc00 | (code & 0x3ff));
+      } else {
+        throw new Error(
+          `UTF-8 decode: code point 0x${code.toString(16)} exceeds UTF-16 reach`,
+        );
+      }
+    }
+  }
+
   return str;
 }

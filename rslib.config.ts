@@ -4,25 +4,49 @@ export default defineConfig({
   lib: [
     {
       format: 'esm',
-      syntax: 'es2023',
-      dts: true,
+      syntax: 'es2021',
+      dts: false, // 临时禁用，先完成 JS 构建
+      source: {
+        entry: {
+          index: './src/index.ts',
+        },
+      },
     },
   ],
   output: {
+    target: 'web',
     copy: [{ from: './public' }, { from: 'README.md' }],
     minify: {
       js: true,
       css: false,
       jsOptions: {
         minimizerOptions: {
-          mangle: false,
-          // 启用压缩
+          mangle: true,
           minify: true,
           compress: {
-            defaults: false,
-            unused: true,
+            arrows: true,
+            booleans: true,
+            collapse_vars: true,
+            comparisons: true,
+            computed_props: true,
+            conditionals: true,
             dead_code: true,
-            // 避免 remoteEntry 的全局变量被 tree-shaking
+            drop_console: false,
+            drop_debugger: true,
+            evaluate: true,
+            if_return: true,
+            inline: true,
+            join_vars: true,
+            loops: true,
+            negate_iife: true,
+            properties: true,
+            reduce_funcs: true,
+            reduce_vars: true,
+            sequences: true,
+            side_effects: true,
+            switches: true,
+            typeofs: true,
+            unused: true,
             toplevel: false,
           },
           format: {
@@ -31,6 +55,11 @@ export default defineConfig({
           },
         },
       },
+    },
+  },
+  performance: {
+    chunkSplit: {
+      strategy: 'all-in-one',
     },
   },
 });

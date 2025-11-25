@@ -43,3 +43,4 @@ Thumbs.db
 .cache/
 .npm/
 .pnpm-store/
+.pnpm-lock.yaml

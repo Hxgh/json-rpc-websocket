@@ -8,7 +8,13 @@
       "Bash(fi)",
       "Bash(npx tsx:*)",
       "Bash(pnpm run build:*)",
-      "Bash(pnpm install:*)"
+      "Bash(pnpm install:*)",
+      "Bash(cat:*)",
+      "Bash(gzip:*)",
+      "Bash(find:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run typecheck:*)",
+      "Bash(tree:*)"
     ],
     "deny": [],
     "ask": []

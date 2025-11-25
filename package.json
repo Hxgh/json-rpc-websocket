@@ -10,14 +10,15 @@
   },
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "scripts": {
     "build": "rslib build",
+    "build:analyze": "rslib build --analyze",
     "check": "biome check --write",
     "dev": "rslib build --watch",
     "format": "biome format --write",
+    "typecheck": "tsc --noEmit",
+    "test": "node test-pack-advanced.ts",
     "build:npm": "rslib build && nrm use npm && cd dist && npm publish --access public && cd ../"
   },
   "devDependencies": {
