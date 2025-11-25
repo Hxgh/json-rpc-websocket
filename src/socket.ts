@@ -1,4 +1,4 @@
-import { encode, decode } from './msgpack';
+import { encode, decode } from './pack';
 import { generateUUID } from './tools';
 import type {
   PropsType,
