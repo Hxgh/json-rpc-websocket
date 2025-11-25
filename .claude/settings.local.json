@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(if [ -f .cursorrules ])",
+      "Bash(then cat .cursorrules)",
+      "Bash(then cat .github/copilot-instructions.md)",
+      "Bash(else echo \"No rules found\")",
+      "Bash(fi)",
+      "Bash(npx tsx:*)",
+      "Bash(pnpm run build:*)",
+      "Bash(pnpm install:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
