@@ -36,7 +36,7 @@ const DEFAULT_OPTIONS: Required<Omit<ConnectionOptions, 'url' | 'protocols'>> =
     reconnectInterval: 3000,
     maxReconnectAttempts: 5,
     defaultTimeout: 15000,
-    heartbeatInterval: 30000,
+    heartbeatInterval: 0, // 默认关闭，需要时手动开启
     heartbeatMethod: 'ping',
     debug: false,
   };
