@@ -87,6 +87,29 @@ export interface StreamController {
 }
 
 /**
+ * 消息事件数据（包含原始数据用于转发）
+ */
+export interface MessageEventData {
+  /** 解码后的消息 */
+  data: JsonRpcResponse;
+  /** 原始二进制数据（用于转发） */
+  rawData: ArrayBuffer;
+}
+
+/**
+ * 事件名称常量
+ */
+export const SocketEvent = {
+  Open: 'open',
+  Close: 'close',
+  Error: 'error',
+  Message: 'message',
+  Reconnecting: 'reconnecting',
+  Reconnected: 'reconnected',
+  ReconnectFailed: 'reconnect_failed',
+} as const;
+
+/**
  * 事件类型
  */
 export interface SocketEvents extends Record<string, unknown> {
@@ -97,7 +120,7 @@ export interface SocketEvents extends Record<string, unknown> {
   /** 连接错误 */
   error: Event;
   /** 收到消息 */
-  message: JsonRpcResponse;
+  message: MessageEventData;
   /** 重连中 */
   reconnecting: { attempt: number; maxAttempts: number };
   /** 重连成功 */

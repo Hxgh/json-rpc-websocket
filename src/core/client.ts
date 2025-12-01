@@ -27,7 +27,7 @@ import type {
   StreamController,
   StreamOptions,
 } from '../types/socket';
-import { ConnectionState } from '../types/socket';
+import { ConnectionState, SocketEvent } from '../types/socket';
 import { EventEmitter } from './event-emitter';
 
 const DEFAULT_OPTIONS: Required<Omit<ConnectionOptions, 'url' | 'protocols'>> =
@@ -119,7 +119,7 @@ export class JsonRpcWebSocketClient extends EventEmitter<SocketEvents> {
     this.log('Connection opened');
     this.reconnectAttempts = 0;
     this.startHeartbeat();
-    this.emit('open', event);
+    this.emit(SocketEvent.Open, event);
   }
 
   /**
@@ -127,7 +127,8 @@ export class JsonRpcWebSocketClient extends EventEmitter<SocketEvents> {
    */
   private handleMessage(event: MessageEvent): void {
     try {
-      const response = decode(new Uint8Array(event.data)) as JsonRpcResponse;
+      const rawData = event.data as ArrayBuffer;
+      const response = decode(new Uint8Array(rawData)) as JsonRpcResponse;
 
       this.log('Received:', response);
 
@@ -144,7 +145,7 @@ export class JsonRpcWebSocketClient extends EventEmitter<SocketEvents> {
         const streamCallback = this.streamCallbacks.get(response.id);
         if (streamCallback) {
           streamCallback(response);
-          this.emit('message', response);
+          this.emit(SocketEvent.Message, { data: response, rawData });
           return;
         }
 
@@ -168,7 +169,7 @@ export class JsonRpcWebSocketClient extends EventEmitter<SocketEvents> {
         }
       }
 
-      this.emit('message', response);
+      this.emit(SocketEvent.Message, { data: response, rawData });
     } catch (error) {
       this.log('Failed to decode message:', error);
     }
@@ -180,7 +181,7 @@ export class JsonRpcWebSocketClient extends EventEmitter<SocketEvents> {
   private handleClose(event: CloseEvent): void {
     this.log('Connection closed:', event.code, event.reason);
     this.stopHeartbeat();
-    this.emit('close', event);
+    this.emit(SocketEvent.Close, event);
 
     // 拒绝所有待处理的请求
     this.rejectAllPendingRequests(
@@ -199,7 +200,7 @@ export class JsonRpcWebSocketClient extends EventEmitter<SocketEvents> {
    */
   private handleError(event: Event): void {
     this.log('Connection error:', event);
-    this.emit('error', event);
+    this.emit(SocketEvent.Error, event);
   }
 
   /**
@@ -212,7 +213,7 @@ export class JsonRpcWebSocketClient extends EventEmitter<SocketEvents> {
 
     if (this.reconnectAttempts >= this.options.maxReconnectAttempts) {
       this.log('Max reconnect attempts reached');
-      this.emit('reconnect_failed', undefined);
+      this.emit(SocketEvent.ReconnectFailed, undefined);
       return;
     }
 
@@ -223,7 +224,7 @@ export class JsonRpcWebSocketClient extends EventEmitter<SocketEvents> {
       `Reconnecting in ${this.options.reconnectInterval}ms (attempt ${this.reconnectAttempts}/${this.options.maxReconnectAttempts})`,
     );
 
-    this.emit('reconnecting', {
+    this.emit(SocketEvent.Reconnecting, {
       attempt: this.reconnectAttempts,
       maxAttempts: this.options.maxReconnectAttempts,
     });
@@ -404,6 +405,17 @@ export class JsonRpcWebSocketClient extends EventEmitter<SocketEvents> {
         return closed;
       },
     };
+  }
+
+  /**
+   * 发送原始数据（用于转发）
+   */
+  sendRaw(data: ArrayBuffer | Uint8Array): void {
+    if (!this.isConnected) {
+      throw new Error('WebSocket is not connected');
+    }
+    this.ws?.send(data);
+    this.log('Sent raw data:', data.byteLength, 'bytes');
   }
 
   /**

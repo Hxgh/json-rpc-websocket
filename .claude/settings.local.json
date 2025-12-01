@@ -14,7 +14,10 @@
       "Bash(find:*)",
       "Bash(npm run build:*)",
       "Bash(npm run typecheck:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(git -C /Users/hugh/workspace/github/json-rpc-websocket log --oneline -15)",
+      "Bash(git -C /Users/hugh/workspace/github/json-rpc-websocket show cb03872:src/core/client.ts)",
+      "Bash(git -C:*)"
     ],
     "deny": [],
     "ask": []

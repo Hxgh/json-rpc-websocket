@@ -26,6 +26,9 @@ export type {
   SocketEvents,
   PerformanceStats,
   ConnectionState,
+  MessageEventData,
+  // 事件常量
+  SocketEvent,
 } from './types';
 
 // MessagePack 编解码
