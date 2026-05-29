@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       ws:
-        specifier: ^8.16.0
-        version: 8.18.3
+        specifier: ^8.20.1
+        version: 8.20.1
     devDependencies:
       '@biomejs/biome':
         specifier: ^1.9.4
@@ -327,8 +327,8 @@ packages:
   undici-types@6.21.0:
     resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
 
-  ws@8.18.3:
-    resolution: {integrity: sha512-PEIGCY5tSlUt50cqyMXfCzX+oOPqN0vuGqWzbcJ2xvnkzkq46oOpz7dQaTDBdfICb4N14+GARUDw2XV2N4tvzg==}
+  ws@8.20.1:
+    resolution: {integrity: sha512-It4dO0K5v//JtTXuPkfEOaI3uUN87iYPnqo/ZzqCoG3g8uhA66QUMs/SrM0YK7/NAu+r4LMh/9dq2A7k+rHs+w==}
     engines: {node: '>=10.0.0'}
     peerDependencies:
       bufferutil: ^4.0.1
@@ -574,4 +574,4 @@ snapshots:
 
   undici-types@6.21.0: {}
 
-  ws@8.18.3: {}
+  ws@8.20.1: {}
