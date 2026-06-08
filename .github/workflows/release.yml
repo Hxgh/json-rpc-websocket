@@ -56,6 +56,7 @@ jobs:
           title: "chore(release): version packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Resolve release version
         if: ${{ steps.changesets.outputs.published == 'true' || steps.changesets.outputs.version != '' }}
