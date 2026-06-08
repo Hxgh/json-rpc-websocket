@@ -39,6 +39,7 @@ const DEFAULT_OPTIONS: Required<Omit<ConnectionOptions, 'url' | 'protocols'>> =
     heartbeatInterval: 0, // 默认关闭，需要时手动开启
     heartbeatMethod: 'ping',
     debug: false,
+    inboundMode: 'messagepack',
   };
 
 export class JsonRpcWebSocketClient extends EventEmitter<SocketEvents> {
@@ -128,6 +129,14 @@ export class JsonRpcWebSocketClient extends EventEmitter<SocketEvents> {
   private handleMessage(event: MessageEvent): void {
     try {
       const rawData = event.data as ArrayBuffer;
+
+      if (this.options.inboundMode === 'raw') {
+        this.log('Received raw message:', rawData);
+        this.stats.responsesReceived++;
+        this.emit(SocketEvent.Message, { decoded: false, rawData });
+        return;
+      }
+
       const response = decode(new Uint8Array(rawData)) as JsonRpcResponse;
 
       this.log('Received:', response);
@@ -145,7 +154,11 @@ export class JsonRpcWebSocketClient extends EventEmitter<SocketEvents> {
         const streamCallback = this.streamCallbacks.get(response.id);
         if (streamCallback) {
           streamCallback(response);
-          this.emit(SocketEvent.Message, { data: response, rawData });
+          this.emit(SocketEvent.Message, {
+            decoded: true,
+            data: response,
+            rawData,
+          });
           return;
         }
 
@@ -169,7 +182,11 @@ export class JsonRpcWebSocketClient extends EventEmitter<SocketEvents> {
         }
       }
 
-      this.emit(SocketEvent.Message, { data: response, rawData });
+      this.emit(SocketEvent.Message, {
+        decoded: true,
+        data: response,
+        rawData,
+      });
     } catch (error) {
       this.log('Failed to decode message:', error);
     }
@@ -301,6 +318,10 @@ export class JsonRpcWebSocketClient extends EventEmitter<SocketEvents> {
       throw new Error('WebSocket is not connected');
     }
 
+    if (this.options.inboundMode === 'raw') {
+      throw new Error('Inbound raw mode cannot resolve JSON-RPC responses.');
+    }
+
     const id = options.id ?? generateUUID();
     const request: JsonRpcRequest<TParams> = {
       jsonrpc: '2.0',
@@ -368,6 +389,10 @@ export class JsonRpcWebSocketClient extends EventEmitter<SocketEvents> {
   ): StreamController {
     if (!this.isConnected) {
       throw new Error('WebSocket is not connected');
+    }
+
+    if (this.options.inboundMode === 'raw') {
+      throw new Error('Inbound raw mode cannot resolve JSON-RPC responses.');
     }
 
     const id = options.id ?? generateUUID();

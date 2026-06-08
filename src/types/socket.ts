@@ -4,6 +4,8 @@
 
 import type { JsonRpcResponse } from './jsonrpc';
 
+export type InboundMode = 'messagepack' | 'raw';
+
 /**
  * WebSocket 连接状态
  */
@@ -36,6 +38,8 @@ export interface ConnectionOptions {
   heartbeatMethod?: string;
   /** 是否启用调试日志 */
   debug?: boolean;
+  /** 入站消息模式，默认 MessagePack JSON-RPC 解码 */
+  inboundMode?: InboundMode;
 }
 
 /**
@@ -86,15 +90,26 @@ export interface StreamController {
   readonly closed: boolean;
 }
 
-/**
- * 消息事件数据（包含原始数据用于转发）
- */
-export interface MessageEventData {
+export interface DecodedMessageEventData {
+  /** 消息是否已解码 */
+  decoded: true;
   /** 解码后的消息 */
   data: JsonRpcResponse;
   /** 原始二进制数据（用于转发） */
   rawData: ArrayBuffer;
 }
+
+export interface RawMessageEventData {
+  /** 消息是否已解码 */
+  decoded: false;
+  /** 原始二进制数据（用于转发） */
+  rawData: ArrayBuffer;
+}
+
+/**
+ * 消息事件数据（包含原始数据用于转发）
+ */
+export type MessageEventData = DecodedMessageEventData | RawMessageEventData;
 
 /**
  * 事件名称常量

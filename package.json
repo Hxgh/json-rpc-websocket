@@ -18,7 +18,7 @@
     "dev": "rslib build --watch",
     "format": "biome format --write",
     "typecheck": "tsc --noEmit",
-    "test": "node test-pack-advanced.ts",
+    "test": "pnpm build && node test-inbound-mode.mjs",
     "build:npm": "rslib build && nrm use npm && cd dist && npm publish --access public && cd ../"
   },
   "devDependencies": {

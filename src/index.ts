@@ -26,6 +26,7 @@ export type {
   SocketEvents,
   PerformanceStats,
   ConnectionState,
+  InboundMode,
   MessageEventData,
 } from './types';
 
