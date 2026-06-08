@@ -7,6 +7,14 @@
   "author": "Hxgh",
   "license": "MIT",
   "version": "0.2.5",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Hxgh/json-rpc-websocket"
+  },
+  "homepage": "https://github.com/Hxgh/json-rpc-websocket#readme",
+  "bugs": {
+    "url": "https://github.com/Hxgh/json-rpc-websocket/issues"
+  },
   "private": false,
   "keywords": [
     "json-rpc",

@@ -2,6 +2,14 @@
   "name": "@rfkit/json-rpc-websocket",
   "version": "0.2.5",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Hxgh/json-rpc-websocket"
+  },
+  "homepage": "https://github.com/Hxgh/json-rpc-websocket#readme",
+  "bugs": {
+    "url": "https://github.com/Hxgh/json-rpc-websocket/issues"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
