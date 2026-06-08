@@ -1,6 +1,6 @@
 {
   "name": "@rfkit/json-rpc-websocket",
-  "version": "1.0.0",
+  "version": "0.2.4",
   "type": "module",
   "exports": {
     ".": {
@@ -10,8 +10,11 @@
   },
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
+    "changeset": "changeset",
     "build": "rslib build",
     "build:analyze": "rslib build --analyze",
     "check": "biome check --write",
@@ -19,9 +22,14 @@
     "format": "biome format --write",
     "typecheck": "tsc --noEmit",
     "test": "pnpm build && node test-inbound-mode.mjs",
-    "build:npm": "rslib build && nrm use npm && cd dist && npm publish --access public && cd ../"
+    "build:npm": "rslib build && nrm use npm && cd dist && npm publish --access public && cd ../",
+    "publish:npm": "pnpm build && npm publish ./dist --access public",
+    "release:publish": "pnpm publish:npm",
+    "release:version": "changeset version && node ./scripts/sync-public-package-version.mjs",
+    "validate:release": "pnpm typecheck && pnpm test"
   },
   "devDependencies": {
+    "@changesets/cli": "2.31.0",
     "@biomejs/biome": "^1.9.4",
     "@rslib/core": "^0.5.3",
     "@types/node": "^22.8.1",

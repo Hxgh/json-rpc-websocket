@@ -1,0 +1,96 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment: npm-release
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.30.3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+          registry-url: https://registry.npmjs.org
+
+      - name: Print release toolchain versions
+        run: |
+          node --version
+          npm --version
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Create release PR or publish package
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          version: pnpm release:version
+          publish: pnpm release:publish
+          commit: "chore(release): version packages"
+          title: "chore(release): version packages"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve release version
+        if: ${{ steps.changesets.outputs.published == 'true' || steps.changesets.outputs.version != '' }}
+        id: release_version
+        run: |
+          VERSION="${{ steps.changesets.outputs.version }}"
+          if [ -z "$VERSION" ]; then
+            VERSION=$(node -p 'JSON.parse(require("node:fs").readFileSync("package.json", "utf8")).version')
+          fi
+
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Ensure git tag exists
+        if: ${{ steps.release_version.outputs.version != '' }}
+        env:
+          VERSION: ${{ steps.release_version.outputs.version }}
+        run: |
+          git fetch --tags origin
+          if git rev-parse "refs/tags/v${VERSION}" >/dev/null 2>&1; then
+            echo "Tag v${VERSION} already exists, skipping."
+            exit 0
+          fi
+
+          git tag "v${VERSION}"
+          git push origin "v${VERSION}"
+
+      - name: Ensure GitHub release exists
+        if: ${{ steps.release_version.outputs.version != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.release_version.outputs.version }}
+        run: |
+          if gh release view "v${VERSION}" >/dev/null 2>&1; then
+            echo "GitHub Release v${VERSION} already exists, skipping."
+            exit 0
+          fi
+
+          gh release create "v${VERSION}" --title "v${VERSION}" --generate-notes
