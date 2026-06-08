@@ -5,6 +5,8 @@
 import type { JsonRpcResponse } from './jsonrpc';
 
 export type InboundMode = 'messagepack' | 'raw';
+export type OutboundMode = 'messagepack' | 'raw';
+export type RawOutboundData = string | ArrayBuffer | ArrayBufferView | Blob;
 
 /**
  * WebSocket 连接状态
@@ -40,6 +42,8 @@ export interface ConnectionOptions {
   debug?: boolean;
   /** 入站消息模式，默认 MessagePack JSON-RPC 解码 */
   inboundMode?: InboundMode;
+  /** 出站消息模式，默认 MessagePack JSON-RPC 编码 */
+  outboundMode?: OutboundMode;
 }
 
 /**

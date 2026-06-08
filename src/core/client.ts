@@ -23,6 +23,7 @@ import type {
   PerformanceStats,
   RequestMetadata,
   RequestOptions,
+  RawOutboundData,
   SocketEvents,
   StreamController,
   StreamOptions,
@@ -40,6 +41,7 @@ const DEFAULT_OPTIONS: Required<Omit<ConnectionOptions, 'url' | 'protocols'>> =
     heartbeatMethod: 'ping',
     debug: false,
     inboundMode: 'messagepack',
+    outboundMode: 'messagepack',
   };
 
 export class JsonRpcWebSocketClient extends EventEmitter<SocketEvents> {
@@ -322,6 +324,10 @@ export class JsonRpcWebSocketClient extends EventEmitter<SocketEvents> {
       throw new Error('Inbound raw mode cannot resolve JSON-RPC responses.');
     }
 
+    if (this.options.outboundMode === 'raw') {
+      throw new Error('Outbound raw mode cannot send JSON-RPC requests.');
+    }
+
     const id = options.id ?? generateUUID();
     const request: JsonRpcRequest<TParams> = {
       jsonrpc: '2.0',
@@ -369,6 +375,10 @@ export class JsonRpcWebSocketClient extends EventEmitter<SocketEvents> {
       throw new Error('WebSocket is not connected');
     }
 
+    if (this.options.outboundMode === 'raw') {
+      throw new Error('Outbound raw mode cannot send JSON-RPC notifications.');
+    }
+
     const notification: JsonRpcNotification<TParams> = {
       jsonrpc: '2.0',
       method: options.method,
@@ -393,6 +403,10 @@ export class JsonRpcWebSocketClient extends EventEmitter<SocketEvents> {
 
     if (this.options.inboundMode === 'raw') {
       throw new Error('Inbound raw mode cannot resolve JSON-RPC responses.');
+    }
+
+    if (this.options.outboundMode === 'raw') {
+      throw new Error('Outbound raw mode cannot send JSON-RPC stream requests.');
     }
 
     const id = options.id ?? generateUUID();
@@ -435,12 +449,12 @@ export class JsonRpcWebSocketClient extends EventEmitter<SocketEvents> {
   /**
    * 发送原始数据（用于转发）
    */
-  sendRaw(data: ArrayBuffer | Uint8Array): void {
+  sendRaw(data: RawOutboundData): void {
     if (!this.isConnected) {
       throw new Error('WebSocket is not connected');
     }
     this.ws?.send(data);
-    this.log('Sent raw data:', data.byteLength, 'bytes');
+    this.log('Sent raw data:', data);
   }
 
   /**

@@ -1,5 +1,5 @@
 import { WebSocket, WebSocketServer } from 'ws';
-import JSONRPCWebSocket, { SocketEvent, decode, encode } from './dist/index.js';
+import JSONRPCWebSocket, { SocketEvent, encode } from './dist/index.js';
 
 globalThis.WebSocket = WebSocket;
 
@@ -41,10 +41,10 @@ if (decodedMessage.decoded !== true || decodedMessage.data.result !== 'ok') {
 decodedClient.close();
 await decodedServer.close();
 
-let rawNotifyDecoded;
+let rawOutboundText;
 const rawServer = await withServer((socket) => {
   socket.on('message', (data) => {
-    rawNotifyDecoded = decode(new Uint8Array(data));
+    rawOutboundText = data.toString();
   });
   setTimeout(() => {
     socket.send(Uint8Array.from([1, 2, 3, 4]));
@@ -54,11 +54,12 @@ const rawClient = new JSONRPCWebSocket({
   url: rawServer.url,
   autoReconnect: false,
   inboundMode: 'raw',
+  outboundMode: 'raw',
 });
 const rawMessagePromise = waitForMessage(rawClient);
 
 await waitForOpen(rawClient);
-await rawClient.notify({ method: 'login' });
+rawClient.sendRaw('login');
 
 const rawMessage = await rawMessagePromise;
 
@@ -66,8 +67,21 @@ if (rawMessage.decoded !== false || rawMessage.rawData.byteLength !== 4) {
   throw new Error('raw inbound mode failed');
 }
 
-if (rawNotifyDecoded?.method !== 'login') {
-  throw new Error('raw mode notify did not encode outbound notification');
+if (rawOutboundText !== 'login') {
+  throw new Error('raw outbound mode encoded outbound data');
+}
+
+let notifyFailed = false;
+
+try {
+  await rawClient.notify({ method: 'login' });
+} catch (error) {
+  notifyFailed =
+    error instanceof Error && error.message.includes('Outbound raw mode');
+}
+
+if (!notifyFailed) {
+  throw new Error('raw outbound mode notify did not fail fast');
 }
 
 let requestFailed = false;
@@ -99,4 +113,4 @@ if (!streamFailed) {
 rawClient.close();
 await rawServer.close();
 
-console.log('json-rpc-websocket inbound mode smoke tests passed');
+console.log('json-rpc-websocket raw mode smoke tests passed');

@@ -27,6 +27,8 @@ export type {
   PerformanceStats,
   ConnectionState,
   InboundMode,
+  OutboundMode,
+  RawOutboundData,
   MessageEventData,
 } from './types';
 

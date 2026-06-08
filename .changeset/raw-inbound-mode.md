@@ -2,4 +2,4 @@
 "@rfkit/json-rpc-websocket": patch
 ---
 
-Add raw inbound message mode for WebSocket clients.
+Add raw inbound and outbound message modes for WebSocket clients.
