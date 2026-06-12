@@ -9,7 +9,7 @@ export default defineConfig({
     }
   ],
   output: {
-    copy: [{ from: './public' }, { from: 'README.md' }],
+    copy: [{ from: 'README.md' }],
     minify: {
       js: true,
       css: false,

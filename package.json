@@ -2,6 +2,9 @@
   "name": "@rfkit/json-rpc-websocket",
   "version": "0.2.5",
   "type": "module",
+  "description": "A lightweight JSON-RPC 2.0 client implementation over WebSocket, supporting request-response, notifications, and batch processing",
+  "author": "Hxgh",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/Hxgh/json-rpc-websocket"
@@ -21,20 +24,33 @@
   "files": [
     "dist"
   ],
+  "keywords": [
+    "json-rpc",
+    "websocket",
+    "rpc",
+    "client",
+    "remote-procedure-call",
+    "typescript",
+    "real-time",
+    "communication",
+    "async"
+  ],
   "scripts": {
     "changeset": "changeset",
-    "build": "rslib build",
+    "build": "rslib build && node ./scripts/release/write-dist-package.mjs",
+    "build:release": "pnpm build",
     "build:analyze": "rslib build --analyze",
     "check": "biome check --write",
     "dev": "rslib build --watch",
     "format": "biome format --write",
     "typecheck": "tsc --noEmit",
-    "test": "pnpm build && node test-inbound-mode.mjs",
-    "build:npm": "rslib build && nrm use npm && cd dist && npm publish --access public && cd ../",
+    "test": "pnpm build && pnpm test:runtime",
+    "test:runtime": "node test-inbound-mode.mjs",
+    "build:npm": "pnpm release:publish",
     "publish:npm": "pnpm build && npm publish ./dist --access public",
-    "release:publish": "pnpm publish:npm",
-    "release:version": "changeset version && node ./scripts/sync-public-package-version.mjs",
-    "validate:release": "pnpm typecheck && pnpm test"
+    "release:publish": "node ./scripts/release/publish-release.mjs",
+    "release:version": "changeset version",
+    "validate:release": "pnpm typecheck && pnpm build:release && pnpm test:runtime && npm pack ./dist --dry-run"
   },
   "devDependencies": {
     "@changesets/cli": "2.31.0",
@@ -46,5 +62,10 @@
   },
   "dependencies": {
     "ws": "^8.20.1"
-  }
+  },
+  "private": true,
+  "publishConfig": {
+    "access": "public"
+  },
+  "packageManager": "pnpm@10.30.3"
 }
