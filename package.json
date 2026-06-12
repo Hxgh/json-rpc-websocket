@@ -1,6 +1,6 @@
 {
   "name": "@rfkit/json-rpc-websocket",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "type": "module",
   "description": "A lightweight JSON-RPC 2.0 client implementation over WebSocket, supporting request-response, notifications, and batch processing",
   "author": "Hxgh",
